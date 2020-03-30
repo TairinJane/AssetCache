@@ -7,7 +7,7 @@ using YamlDotNet.Serialization;
 
 namespace AssetCache {
     public class TypeConverter : IYamlTypeConverter {
-        private static readonly Type _acceptedType = typeof(Component);
+        private static readonly Type _acceptedType = typeof(SceneObject);
         private static readonly Type _mappingStartType = typeof(MappingStart);
         private static readonly Type _mappingEndType = typeof(MappingEnd);
         private static readonly Type _sequenceEndType = typeof(SequenceEnd);
@@ -18,7 +18,7 @@ namespace AssetCache {
         }
 
         public object ReadYaml(IParser parser, Type type) {
-            KeyValuePair<string, Component> result;
+            KeyValuePair<string, SceneObject> result;
 
             if (parser.Current.GetType() != _mappingStartType) {
                 throw new InvalidDataException("Invalid YAML content.");
