@@ -12,6 +12,7 @@ namespace AssetCache {
             StreamReader fs = File.OpenText("F:\\jopa\\stuff\\SampleScene\\SceneLittle.txt");
             Dictionary<ulong, SceneObject> cache = new Dictionary<ulong, SceneObject>();
             Regex stringFieldPattern = new Regex(@"(?<key>\w+): {(?<value>.+)}");
+            Regex fileIDPattern = new Regex(@"- {fileID: (?<id>\d+)}");
             string componentKey = "m_Component";
 
             //two first lines
@@ -29,6 +30,7 @@ namespace AssetCache {
                 // Console.WriteLine("obj Name: " + fs.ReadLine());
                 var stringsDict = new Dictionary<string, string>();
                 var componentList = new List<ulong>();
+                var childrenList = new List<ulong>();
 
                 while ((line = fs.ReadLine()) != null && !line.StartsWith("---")) {
                     Match match = stringFieldPattern.Match(line);
@@ -40,7 +42,13 @@ namespace AssetCache {
                         }
                         else stringsDict.Add(fieldKey, match.Groups["value"].Value);
                     }
-                    else objectString += line + "\n";
+                    else {
+                        match = fileIDPattern.Match(line);
+                        if (match.Success) {
+                            childrenList.Add(Convert.ToUInt64(match.Groups["id"].Value));
+                        }
+                        else objectString += line + "\n";
+                    }
 
                     hashString += line;
                 }
@@ -59,13 +67,16 @@ namespace AssetCache {
                     objDict[componentKey] = componentList;
                 }
 
+                if (objDict.ContainsKey("m_Children")) {
+                    objDict["m_Children"] = childrenList;
+                }
+
                 cache.Add(key, new SceneObject(GetHash(hashString), objDict));
             }
-
-            // WriteIdAndHash(cache);
-            Console.WriteLine("obj 17640");
-            cache[17640].WriteContent();
-            foreach (var component in cache[17640].GetComponents()) {
+            
+            Console.WriteLine("obj 242");
+            cache[242].WriteContent();
+            foreach (var component in cache[242].GetChildren()) {
                 Console.WriteLine("comp: " + component);
             }
 

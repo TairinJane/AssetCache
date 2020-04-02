@@ -18,6 +18,7 @@ namespace AssetCache {
             var pattern = new Regex($@".*fileID: {anchor}\D.*");
             var count = SearchByRegex(pattern);
             if (GetComponents().Contains(anchor)) count++;
+            if (GetChildren().Contains(anchor)) count++;
             return count;
         }
 
@@ -38,6 +39,22 @@ namespace AssetCache {
             return count;
         }
 
+        public IEnumerable<ulong> GetComponents() {
+            if (content.ContainsKey("m_Component")) {
+                return (List<ulong>) content["m_Component"];
+            }
+
+            throw new KeyNotFoundException("No components for this object");
+        }
+        
+        public IEnumerable<ulong> GetChildren() {
+            if (content.ContainsKey("m_Children")) {
+                return (List<ulong>) content["m_Children"];
+            }
+
+            throw new KeyNotFoundException("No children for this object");
+        }
+        
         public IEnumerable<string> GetKeys() {
             return content.Keys;
         }
@@ -48,12 +65,8 @@ namespace AssetCache {
             }
         }
 
-        public IEnumerable<ulong> GetComponents() {
-            if (content.ContainsKey("m_Component")) {
-                return (List<ulong>) content["m_Component"];
-            }
-
-            throw new KeyNotFoundException("No components for this object");
+        public object GetValue(string key) {
+            return content[key];
         }
     }
 }
