@@ -42,15 +42,22 @@ namespace AssetCache {
             return count;
         }
 
-        IEnumerable<ulong> GetComponents() {
-            List<ulong> fileIds = new List<ulong>();
-            var components = (Dictionary<string, object>) content["m_Component"];
-            foreach (var component in components) {
-                var dict = (Dictionary<string, string>) component.Value;
-                fileIds.Add(Convert.ToUInt64(dict["fileID"]));
+        public IEnumerable<string> GetKeys() {
+            return content.Keys;
+        }
+
+        public void WriteContent() {
+            foreach (var pair in content) {
+                Console.WriteLine(pair.Key + ": " + pair.Value);
+            }
+        }
+
+        public IEnumerable<ulong> GetComponents() {
+            if (content.ContainsKey("m_Component")) {
+                return (List<ulong>) content["m_Component"];
             }
 
-            return fileIds;
+            throw new KeyNotFoundException("No components for this object");
         }
     }
 }

@@ -11,7 +11,8 @@ namespace AssetCache {
         public static void Main(string[] args) {
             StreamReader fs = File.OpenText("F:\\jopa\\stuff\\SampleScene\\SceneLittle.txt");
             Dictionary<ulong, SceneObject> cache = new Dictionary<ulong, SceneObject>();
-            Regex pattern = new Regex(@"(?<key>\w+): {(?<value>.+)}");
+            Regex stringFieldPattern = new Regex(@"(?<key>\w+): {(?<value>.+)}");
+            string componentKey = "m_Component";
 
             //two first lines
             Console.WriteLine(fs.ReadLine());
@@ -22,18 +23,22 @@ namespace AssetCache {
             while (line != null) {
                 // Console.WriteLine(line);
                 var key = GetObjectFileId(line);
+                fs.ReadLine();
                 string objectString = "";
                 string hashString = "";
                 // Console.WriteLine("obj Name: " + fs.ReadLine());
-                Dictionary<string, string> stringsDict = new Dictionary<string, string>();
+                var stringsDict = new Dictionary<string, string>();
+                var componentList = new List<ulong>();
+
                 while ((line = fs.ReadLine()) != null && !line.StartsWith("---")) {
-                    Match match = pattern.Match(line);
+                    Match match = stringFieldPattern.Match(line);
                     if (match.Success) {
                         string fieldKey = match.Groups["key"].Value;
-                        if (!fieldKey.Equals("component")) {
+                        if (fieldKey.Equals("component")) {
                             // Console.WriteLine("match: " + fieldKey + " = " +  match.Groups["value"].Value);
-                            stringsDict.Add(fieldKey, match.Groups["value"].Value);
+                            componentList.Add(Convert.ToUInt64(match.Groups["value"].Value.Split()[1]));
                         }
+                        else stringsDict.Add(fieldKey, match.Groups["value"].Value);
                     }
                     else objectString += line + "\n";
 
@@ -41,14 +46,29 @@ namespace AssetCache {
                 }
 
                 var objDict = ReadObject(objectString);
+                /*Console.WriteLine(key);
+                foreach (var pair in objDict) {
+                    Console.WriteLine(pair.Key + ": " + pair.Value);
+                }*/
+
                 foreach (var pair in stringsDict) {
                     objDict.Add(pair.Key, pair.Value);
+                }
+
+                if (objDict.ContainsKey(componentKey)) {
+                    objDict[componentKey] = componentList;
                 }
 
                 cache.Add(key, new SceneObject(GetHash(hashString), objDict));
             }
 
-            WriteIdAndHash(cache);
+            // WriteIdAndHash(cache);
+            Console.WriteLine("obj 17640");
+            cache[17640].WriteContent();
+            /*foreach (var component in cache[17640].GetComponents()) {
+                Console.WriteLine("comp: " + component);
+            }*/
+
             Console.WriteLine("END");
         }
 
