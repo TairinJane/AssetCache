@@ -20,9 +20,8 @@ namespace AssetCache {
 
         public int GetGuidUsages(string guid) {
             var count = 0;
-            var guidLong = Convert.ToUInt64(guid, 16);
             foreach (var obj in cache.Values) {
-                count += obj.GetLocalAnchorUsages(guidLong);
+                count += obj.GetGuidUsages(guid);
             }
 
             return count;
@@ -33,7 +32,7 @@ namespace AssetCache {
                 return cache[gameObjectAnchor].GetComponents();
             }
 
-            throw new KeyNotFoundException("No GameObject with id = " + gameObjectAnchor);
+            return new List<ulong>();
         }
     }
 }

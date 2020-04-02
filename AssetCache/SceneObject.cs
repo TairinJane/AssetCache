@@ -7,7 +7,7 @@ namespace AssetCache {
     public class SceneObject {
         public string Hash { get; }
 
-        private Dictionary<string, object> content;
+        private readonly Dictionary<string, object> content;
 
         public SceneObject(string hash, Dictionary<string, object> content) {
             Hash = hash;
@@ -15,23 +15,23 @@ namespace AssetCache {
         }
 
         public int GetLocalAnchorUsages(ulong anchor) {
-            var pattern = new Regex($@".*fileID: {anchor}\D.*");
+            var pattern = new Regex($@".*fileID: {anchor}\D*");
             var count = SearchByRegex(pattern);
             if (GetComponents().Contains(anchor)) count++;
             if (GetChildren().Contains(anchor)) count++;
             return count;
         }
 
-        public int GetGuidUsages(ulong guid) {
-            var pattern = new Regex($@".*guid: {guid}\D.*");
+        public int GetGuidUsages(string guid) {
+            var pattern = new Regex($@".*guid: {guid}\D*");
             return SearchByRegex(pattern);
         }
 
         private int SearchByRegex(Regex pattern) {
             var count = 0;
             foreach (var value in content.Values) {
-                if (value is string) {
-                    Match match = pattern.Match((string) value);
+                if (value is string castedValue) {
+                    var match = pattern.Match(castedValue);
                     if (match.Success) count++;
                 }
             }
@@ -44,29 +44,21 @@ namespace AssetCache {
                 return (List<ulong>) content["m_Component"];
             }
 
-            throw new KeyNotFoundException("No components for this object");
+            return new List<ulong>();
         }
-        
-        public IEnumerable<ulong> GetChildren() {
+
+        private IEnumerable<ulong> GetChildren() {
             if (content.ContainsKey("m_Children")) {
                 return (List<ulong>) content["m_Children"];
             }
 
-            throw new KeyNotFoundException("No children for this object");
-        }
-        
-        public IEnumerable<string> GetKeys() {
-            return content.Keys;
+            return new List<ulong>();
         }
 
         public void WriteContent() {
             foreach (var pair in content) {
                 Console.WriteLine(pair.Key + ": " + pair.Value);
             }
-        }
-
-        public object GetValue(string key) {
-            return content[key];
         }
     }
 }

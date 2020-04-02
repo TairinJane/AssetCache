@@ -9,35 +9,33 @@ using YamlDotNet.Serialization;
 namespace AssetCache {
     internal class Program {
         public static void Main(string[] args) {
-            StreamReader fs = File.OpenText("F:\\jopa\\stuff\\SampleScene\\SceneLittle.txt");
-            Dictionary<ulong, SceneObject> cache = new Dictionary<ulong, SceneObject>();
-            Regex stringFieldPattern = new Regex(@"(?<key>\w+): {(?<value>.+)}");
-            Regex fileIDPattern = new Regex(@"- {fileID: (?<id>\d+)}");
-            string componentKey = "m_Component";
+            var fs = File.OpenText("F:\\jopa\\stuff\\SampleScene\\SceneLittle.txt");
+            var cacheDict = new Dictionary<ulong, SceneObject>();
+            var stringFieldPattern = new Regex(@"(?<key>\w+): {(?<value>.+)}");
+            var fileIDPattern = new Regex(@"- {fileID: (?<id>\d+)}");
+            var componentKey = "m_Component";
+            var childrenKey = "m_Children";
 
             //two first lines
             Console.WriteLine(fs.ReadLine());
             Console.WriteLine(fs.ReadLine());
 
-            string line = fs.ReadLine();
+            var line = fs.ReadLine();
 
             while (line != null) {
-                // Console.WriteLine(line);
                 var key = GetObjectFileId(line);
                 fs.ReadLine();
-                string objectString = "";
-                string hashString = "";
-                // Console.WriteLine("obj Name: " + fs.ReadLine());
+                var objectString = "";
+                var hashString = "";
                 var stringsDict = new Dictionary<string, string>();
                 var componentList = new List<ulong>();
                 var childrenList = new List<ulong>();
 
                 while ((line = fs.ReadLine()) != null && !line.StartsWith("---")) {
-                    Match match = stringFieldPattern.Match(line);
+                    var match = stringFieldPattern.Match(line);
                     if (match.Success) {
-                        string fieldKey = match.Groups["key"].Value;
+                        var fieldKey = match.Groups["key"].Value;
                         if (fieldKey.Equals("component")) {
-                            // Console.WriteLine("match: " + fieldKey + " = " +  match.Groups["value"].Value);
                             componentList.Add(Convert.ToUInt64(match.Groups["value"].Value.Split()[1]));
                         }
                         else stringsDict.Add(fieldKey, match.Groups["value"].Value);
@@ -54,10 +52,6 @@ namespace AssetCache {
                 }
 
                 var objDict = ReadObject(objectString);
-                /*Console.WriteLine(key);
-                foreach (var pair in objDict) {
-                    Console.WriteLine(pair.Key + ": " + pair.Value);
-                }*/
 
                 foreach (var pair in stringsDict) {
                     objDict.Add(pair.Key, pair.Value);
@@ -67,18 +61,22 @@ namespace AssetCache {
                     objDict[componentKey] = componentList;
                 }
 
-                if (objDict.ContainsKey("m_Children")) {
-                    objDict["m_Children"] = childrenList;
+                if (objDict.ContainsKey(childrenKey)) {
+                    objDict[childrenKey] = childrenList;
                 }
 
-                cache.Add(key, new SceneObject(GetHash(hashString), objDict));
+                cacheDict.Add(key, new SceneObject(GetHash(hashString), objDict));
             }
-            
-            Console.WriteLine("obj 242");
-            cache[242].WriteContent();
-            foreach (var component in cache[242].GetChildren()) {
+
+            var cache = new Cache(cacheDict);
+            Console.WriteLine("guid 8a53381b50169634491102a6508752e1: " +
+                              cache.GetGuidUsages("8a53381b50169634491102a6508752e1"));
+            Console.WriteLine("components for 17640:");
+            foreach (var component in cache.GetComponentsFor(17640)) {
                 Console.WriteLine("comp: " + component);
             }
+
+            Console.WriteLine("local anchor 241: " + cache.GetLocalAnchorUsages(241));
 
             Console.WriteLine("END");
         }
@@ -97,11 +95,14 @@ namespace AssetCache {
         }
 
         private static ulong GetObjectFileId(string line) {
-            Regex pattern = new Regex(@"--- !u!\d+ &(?<id>\d+)");
-            Match match = pattern.Match(line);
-            string key = match.Groups["id"].Value;
-            // Console.WriteLine("id = " + key);
-            return Convert.ToUInt64(key);
+            var pattern = new Regex(@"--- !u!\d+ &(?<id>\d+)");
+            var match = pattern.Match(line);
+            if (match.Success) {
+                var key = match.Groups["id"].Value;
+                return Convert.ToUInt64(key);
+            }
+
+            throw new ArgumentException("No id in string: " + line);
         }
 
         private static Dictionary<string, object> ReadObject(string obj) {
