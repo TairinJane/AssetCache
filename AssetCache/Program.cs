@@ -65,9 +65,9 @@ namespace AssetCache {
             // WriteIdAndHash(cache);
             Console.WriteLine("obj 17640");
             cache[17640].WriteContent();
-            /*foreach (var component in cache[17640].GetComponents()) {
+            foreach (var component in cache[17640].GetComponents()) {
                 Console.WriteLine("comp: " + component);
-            }*/
+            }
 
             Console.WriteLine("END");
         }
@@ -85,21 +85,12 @@ namespace AssetCache {
             }
         }
 
-        private static void RunThroughDict(Dictionary<ulong, object> dict) {
-            foreach (var obj in dict) {
-                Console.WriteLine("key: " + obj.Key);
-                foreach (var pair in (Dictionary<string, object>) obj.Value) {
-                    Console.WriteLine("  " + pair.Key + " = " + pair.Value);
-                }
-            }
-        }
-
         private static ulong GetObjectFileId(string line) {
             Regex pattern = new Regex(@"--- !u!\d+ &(?<id>\d+)");
             Match match = pattern.Match(line);
             string key = match.Groups["id"].Value;
             // Console.WriteLine("id = " + key);
-            return UInt64.Parse(key);
+            return Convert.ToUInt64(key);
         }
 
         private static Dictionary<string, object> ReadObject(string obj) {
@@ -107,28 +98,6 @@ namespace AssetCache {
                 .Build();
             var dict = deserializer.Deserialize<Dictionary<string, object>>(obj);
             return dict;
-        }
-
-        private void Component(Dictionary<string, object> dict) {
-            var list = (List<object>) dict["m_Component"];
-            var newList = new List<string>();
-            foreach (var str in list) {
-                Console.WriteLine(str);
-                foreach (var pair in (Dictionary<object, object>) str) {
-                    Console.WriteLine("  " + pair.Key + " " + pair.Value);
-                    var fileId = (Dictionary<object, object>) pair.Value;
-                    foreach (var id in fileId) {
-                        Console.WriteLine("    " + id.Key + " " + id.Value);
-                        newList.Add((string) id.Value);
-                    }
-                }
-            }
-
-            dict["m_Component"] = newList;
-            Console.WriteLine(dict["m_Component"].GetType());
-            foreach (var str in (List<string>) dict["m_Component"]) {
-                Console.WriteLine("newList: " + str);
-            }
         }
     }
 }

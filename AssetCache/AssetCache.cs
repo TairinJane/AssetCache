@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace AssetCache {
     public class AssetCache : IAssetCache{
+        private Dictionary<ulong, SceneObject> cache;
+        
+        private Dictionary<string, Dictionary<ulong, SceneObject>> index;
         public object Build(string path, Action interruptChecker) {
             throw new NotImplementedException();
         }

@@ -43,6 +43,7 @@
     </ItemGroup>
     <ItemGroup>
         <Compile Include="AssetCache.cs" />
+        <Compile Include="Cache.cs" />
         <Compile Include="SceneObject.cs" />
         <Compile Include="IAssetCache.cs" />
         <Compile Include="Program.cs" />

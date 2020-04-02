@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace AssetCache {
@@ -16,12 +17,7 @@ namespace AssetCache {
         public int GetLocalAnchorUsages(ulong anchor) {
             var pattern = new Regex($@".*fileID: {anchor}\D.*");
             var count = SearchByRegex(pattern);
-            var components = (Dictionary<string, object>) content["m_Component"];
-            foreach (var component in components) {
-                var dict = (Dictionary<string, string>) component.Value;
-                if (dict["fileID"].Equals("" + anchor)) count++;
-            }
-
+            if (GetComponents().Contains(anchor)) count++;
             return count;
         }
 
