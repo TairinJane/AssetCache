@@ -32,22 +32,22 @@ namespace AssetCache {
                 var objectString = "";
                 var hashString = "";
                 var stringsDict = new Dictionary<string, string>();
-                var componentList = new List<ulong>();
-                var childrenList = new List<ulong>();
+                var componentSet = new HashSet<ulong>();
+                var childrenSet = new HashSet<ulong>();
 
                 while ((line = fileStream.ReadLine()) != null && !line.StartsWith("---")) {
                     var match = stringFieldPattern.Match(line);
                     if (match.Success) {
                         var fieldKey = match.Groups["key"].Value;
                         if (fieldKey.Equals("component")) {
-                            componentList.Add(Convert.ToUInt64(match.Groups["value"].Value.Split()[1]));
+                            componentSet.Add(Convert.ToUInt64(match.Groups["value"].Value.Split()[1]));
                         }
                         else stringsDict.Add(fieldKey, match.Groups["value"].Value);
                     }
                     else {
                         match = fileIDPattern.Match(line);
                         if (match.Success) {
-                            childrenList.Add(Convert.ToUInt64(match.Groups["id"].Value));
+                            childrenSet.Add(Convert.ToUInt64(match.Groups["id"].Value));
                         }
                         else objectString += line + "\n";
                     }
@@ -62,11 +62,11 @@ namespace AssetCache {
                 }
 
                 if (objDict.ContainsKey(COMPONENT_KEY)) {
-                    objDict[COMPONENT_KEY] = componentList;
+                    objDict[COMPONENT_KEY] = componentSet;
                 }
 
                 if (objDict.ContainsKey(CHILDREN_KEY)) {
-                    objDict[CHILDREN_KEY] = childrenList;
+                    objDict[CHILDREN_KEY] = childrenSet;
                 }
 
                 cacheDict.Add(key, new SceneObject(GetHash(hashString), objDict));

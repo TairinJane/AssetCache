@@ -15,7 +15,7 @@ namespace AssetCache {
         }
 
         public int GetLocalAnchorUsages(ulong anchor) {
-            var pattern = new Regex($@".*fileID: {anchor}\D*");
+            var pattern = new Regex($@".*fileID: {anchor}\D+.*");
             var count = SearchByRegex(pattern);
             if (GetComponents().Contains(anchor)) count++;
             if (GetChildren().Contains(anchor)) count++;
@@ -41,18 +41,18 @@ namespace AssetCache {
 
         public IEnumerable<ulong> GetComponents() {
             if (content.ContainsKey("m_Component")) {
-                return (List<ulong>) content["m_Component"];
+                return (HashSet<ulong>) content["m_Component"];
             }
 
-            return new List<ulong>();
+            return new HashSet<ulong>();
         }
 
         private IEnumerable<ulong> GetChildren() {
             if (content.ContainsKey("m_Children")) {
-                return (List<ulong>) content["m_Children"];
+                return (HashSet<ulong>) content["m_Children"];
             }
 
-            return new List<ulong>();
+            return new HashSet<ulong>();
         }
 
         public void WriteContent() {
