@@ -14,14 +14,13 @@ namespace AssetCache {
 
         private readonly Regex stringFieldPattern = new Regex(@"(?<key>\w+): {(?<value>.+)}");
         private readonly Regex fileIDPattern = new Regex(@"- {fileID: (?<id>\d+)}");
-        private const string componentKey = "m_Component";
-        private const string childrenKey = "m_Children";
+        private const string COMPONENT_KEY = "m_Component";
+        private const string CHILDREN_KEY = "m_Children";
 
         public object Build(string path, Action interruptChecker) {
             var fileStream = File.OpenText(path);
             var cacheDict = new Dictionary<ulong, SceneObject>();
 
-            //two first lines
             fileStream.ReadLine();
             fileStream.ReadLine();
 
@@ -62,43 +61,18 @@ namespace AssetCache {
                     objDict.Add(pair.Key, pair.Value);
                 }
 
-                if (objDict.ContainsKey(componentKey)) {
-                    objDict[componentKey] = componentList;
+                if (objDict.ContainsKey(COMPONENT_KEY)) {
+                    objDict[COMPONENT_KEY] = componentList;
                 }
 
-                if (objDict.ContainsKey(childrenKey)) {
-                    objDict[childrenKey] = childrenList;
+                if (objDict.ContainsKey(CHILDREN_KEY)) {
+                    objDict[CHILDREN_KEY] = childrenList;
                 }
 
                 cacheDict.Add(key, new SceneObject(GetHash(hashString), objDict));
             }
 
             return cacheDict;
-        }
-
-        private static string GetHash(string input) {
-            var md5 = MD5.Create();
-            var hash = md5.ComputeHash(Encoding.UTF8.GetBytes(input));
-
-            return Convert.ToBase64String(hash);
-        }
-
-        private static ulong GetObjectFileId(string line) {
-            var pattern = new Regex(@"--- !u!\d+ &(?<id>\d+)");
-            var match = pattern.Match(line);
-            if (match.Success) {
-                var key = match.Groups["id"].Value;
-                return Convert.ToUInt64(key);
-            }
-
-            throw new ArgumentException("No id in " + line);
-        }
-
-        private static Dictionary<string, object> ReadObject(string obj) {
-            var deserializer = new DeserializerBuilder()
-                .Build();
-            var dict = deserializer.Deserialize<Dictionary<string, object>>(obj);
-            return dict;
         }
 
         public void Merge(string path, object result) {
@@ -148,6 +122,27 @@ namespace AssetCache {
 
         public IEnumerable<ulong> GetComponentsFor(ulong gameObjectAnchor) {
             return cache[gameObjectAnchor].GetComponents();
+        }
+
+        private static string GetHash(string input) {
+            var md5 = MD5.Create();
+            var hash = md5.ComputeHash(Encoding.UTF8.GetBytes(input));
+
+            return Convert.ToBase64String(hash);
+        }
+
+        private static ulong GetObjectFileId(string line) {
+            var pattern = new Regex(@"--- !u!\d+ &(?<id>\d+)");
+            var match = pattern.Match(line);
+            if (!match.Success) throw new ArgumentException("No id in " + line);
+            var key = match.Groups["id"].Value;
+            return Convert.ToUInt64(key);
+        }
+
+        private static Dictionary<string, object> ReadObject(string obj) {
+            var deserializer = new DeserializerBuilder().Build();
+            var dict = deserializer.Deserialize<Dictionary<string, object>>(obj);
+            return dict;
         }
     }
 }

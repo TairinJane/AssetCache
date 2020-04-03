@@ -9,75 +9,20 @@ using YamlDotNet.Serialization;
 namespace AssetCache {
     internal class Program {
         public static void Main(string[] args) {
-            var fs = File.OpenText("F:\\jopa\\stuff\\SampleScene\\SceneLittle.txt");
-            var cacheDict = new Dictionary<ulong, SceneObject>();
-            var stringFieldPattern = new Regex(@"(?<key>\w+): {(?<value>.+)}");
-            var fileIDPattern = new Regex(@"- {fileID: (?<id>\d+)}");
-            var componentKey = "m_Component";
-            var childrenKey = "m_Children";
-
-            //two first lines
-            Console.WriteLine(fs.ReadLine());
-            Console.WriteLine(fs.ReadLine());
-
-            var line = fs.ReadLine();
-
-            while (line != null) {
-                var key = GetObjectFileId(line);
-                fs.ReadLine();
-                var objectString = "";
-                var hashString = "";
-                var stringsDict = new Dictionary<string, string>();
-                var componentList = new List<ulong>();
-                var childrenList = new List<ulong>();
-
-                while ((line = fs.ReadLine()) != null && !line.StartsWith("---")) {
-                    var match = stringFieldPattern.Match(line);
-                    if (match.Success) {
-                        var fieldKey = match.Groups["key"].Value;
-                        if (fieldKey.Equals("component")) {
-                            componentList.Add(Convert.ToUInt64(match.Groups["value"].Value.Split()[1]));
-                        }
-                        else stringsDict.Add(fieldKey, match.Groups["value"].Value);
-                    }
-                    else {
-                        match = fileIDPattern.Match(line);
-                        if (match.Success) {
-                            childrenList.Add(Convert.ToUInt64(match.Groups["id"].Value));
-                        }
-                        else objectString += line + "\n";
-                    }
-
-                    hashString += line;
-                }
-
-                var objDict = ReadObject(objectString);
-
-                foreach (var pair in stringsDict) {
-                    objDict.Add(pair.Key, pair.Value);
-                }
-
-                if (objDict.ContainsKey(componentKey)) {
-                    objDict[componentKey] = componentList;
-                }
-
-                if (objDict.ContainsKey(childrenKey)) {
-                    objDict[childrenKey] = childrenList;
-                }
-
-                cacheDict.Add(key, new SceneObject(GetHash(hashString), objDict));
-            }
-
-            var cache = new Cache(cacheDict);
+            var path = "F:\\jopa\\stuff\\SampleScene\\SampleScene.unity";
+            
+            AssetCache assetCache = new AssetCache();
+            var result = assetCache.Build(path, () => throw new OperationCanceledException());
+            assetCache.Merge(path, result);
+            
             Console.WriteLine("guid 8a53381b50169634491102a6508752e1: " +
-                              cache.GetGuidUsages("8a53381b50169634491102a6508752e1"));
+                              assetCache.GetGuidUsages("8a53381b50169634491102a6508752e1"));
             Console.WriteLine("components for 17640:");
-            foreach (var component in cache.GetComponentsFor(17640)) {
+            foreach (var component in assetCache.GetComponentsFor(17640)) {
                 Console.WriteLine("comp: " + component);
             }
 
-            Console.WriteLine("local anchor 241: " + cache.GetLocalAnchorUsages(241));
-
+            Console.WriteLine("local anchor 241: " + assetCache.GetLocalAnchorUsages(241));
             Console.WriteLine("END");
         }
 
