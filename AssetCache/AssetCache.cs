@@ -12,6 +12,8 @@ namespace AssetCache {
         private Dictionary<ulong, SceneObject> cache;
         private string assetPath;
 
+        private Dictionary<ulong, SceneObject> tempCache;
+
         private readonly Regex stringFieldPattern = new Regex(@"(?<key>\w+): {(?<value>.+)}");
         private readonly Regex fileIDPattern = new Regex(@"- {fileID: (?<id>\d+)}");
         private const string COMPONENT_KEY = "m_Component";
@@ -59,27 +61,38 @@ namespace AssetCache {
                         hashString += line;
 
                         if (initWriteTime != File.GetLastWriteTime(path)) {
+                            tempCache = cacheDict;
                             interruptChecker.Invoke();
                         }
                     }
 
-                    var objDict = ReadObject(objectString);
-
-                    foreach (var pair in stringsDict) {
-                        objDict.Add(pair.Key, pair.Value);
+                    var hash = GetHash(hashString);
+                    if (tempCache != null) {
+                        if (tempCache.ContainsKey(key) && tempCache[key].Hash == hash) {
+                            cacheDict.Add(key, tempCache[key]);
+                            tempCache.Remove(key);
+                        }
                     }
+                    else {
+                        var objDict = ReadObject(objectString);
 
-                    if (objDict.ContainsKey(COMPONENT_KEY)) {
-                        objDict[COMPONENT_KEY] = componentSet;
+                        foreach (var pair in stringsDict) {
+                            objDict.Add(pair.Key, pair.Value);
+                        }
+
+                        if (objDict.ContainsKey(COMPONENT_KEY)) {
+                            objDict[COMPONENT_KEY] = componentSet;
+                        }
+
+                        if (objDict.ContainsKey(CHILDREN_KEY)) {
+                            objDict[CHILDREN_KEY] = childrenSet;
+                        }
+
+                        cacheDict.Add(key, new SceneObject(hash, objDict));
                     }
-
-                    if (objDict.ContainsKey(CHILDREN_KEY)) {
-                        objDict[CHILDREN_KEY] = childrenSet;
-                    }
-
-                    cacheDict.Add(key, new SceneObject(GetHash(hashString), objDict));
                 }
 
+                tempCache = null;
                 return cacheDict;
             }
         }
