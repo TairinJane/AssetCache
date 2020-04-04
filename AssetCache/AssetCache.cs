@@ -18,87 +18,101 @@ namespace AssetCache {
         private const string CHILDREN_KEY = "m_Children";
 
         public object Build(string path, Action interruptChecker) {
-            var fileStream = File.OpenText(path);
-            var cacheDict = new Dictionary<ulong, SceneObject>();
+            if (!File.Exists(path)) throw new FileNotFoundException();
 
-            fileStream.ReadLine();
-            fileStream.ReadLine();
+            var initWriteTime = File.GetLastWriteTime(path);
 
-            var line = fileStream.ReadLine();
+            using (var fileStream = new StreamReader(path, true)) {
+                var cacheDict = new Dictionary<ulong, SceneObject>();
 
-            while (line != null) {
-                var key = GetObjectFileId(line);
                 fileStream.ReadLine();
-                var objectString = "";
-                var hashString = "";
-                var stringsDict = new Dictionary<string, string>();
-                var componentSet = new HashSet<ulong>();
-                var childrenSet = new HashSet<ulong>();
+                fileStream.ReadLine();
 
-                while ((line = fileStream.ReadLine()) != null && !line.StartsWith("---")) {
-                    var match = stringFieldPattern.Match(line);
-                    if (match.Success) {
-                        var fieldKey = match.Groups["key"].Value;
-                        if (fieldKey.Equals("component")) {
-                            componentSet.Add(Convert.ToUInt64(match.Groups["value"].Value.Split()[1]));
-                        }
-                        else stringsDict.Add(fieldKey, match.Groups["value"].Value);
-                    }
-                    else {
-                        match = fileIDPattern.Match(line);
+                var line = fileStream.ReadLine();
+
+                while (line != null) {
+                    var key = GetObjectFileId(line);
+                    fileStream.ReadLine();
+                    var objectString = "";
+                    var hashString = "";
+                    var stringsDict = new Dictionary<string, string>();
+                    var componentSet = new HashSet<ulong>();
+                    var childrenSet = new HashSet<ulong>();
+
+                    while ((line = fileStream.ReadLine()) != null && !line.StartsWith("---")) {
+                        var match = stringFieldPattern.Match(line);
                         if (match.Success) {
-                            childrenSet.Add(Convert.ToUInt64(match.Groups["id"].Value));
+                            var fieldKey = match.Groups["key"].Value;
+                            if (fieldKey.Equals("component")) {
+                                componentSet.Add(Convert.ToUInt64(match.Groups["value"].Value.Split()[1]));
+                            }
+                            else stringsDict.Add(fieldKey, match.Groups["value"].Value);
                         }
-                        else objectString += line + "\n";
+                        else {
+                            match = fileIDPattern.Match(line);
+                            if (match.Success) {
+                                childrenSet.Add(Convert.ToUInt64(match.Groups["id"].Value));
+                            }
+                            else objectString += line + "\n";
+                        }
+
+                        hashString += line;
+
+                        if (initWriteTime != File.GetLastWriteTime(path)) {
+                            interruptChecker.Invoke();
+                        }
                     }
 
-                    hashString += line;
+                    var objDict = ReadObject(objectString);
+
+                    foreach (var pair in stringsDict) {
+                        objDict.Add(pair.Key, pair.Value);
+                    }
+
+                    if (objDict.ContainsKey(COMPONENT_KEY)) {
+                        objDict[COMPONENT_KEY] = componentSet;
+                    }
+
+                    if (objDict.ContainsKey(CHILDREN_KEY)) {
+                        objDict[CHILDREN_KEY] = childrenSet;
+                    }
+
+                    cacheDict.Add(key, new SceneObject(GetHash(hashString), objDict));
                 }
 
-                var objDict = ReadObject(objectString);
-
-                foreach (var pair in stringsDict) {
-                    objDict.Add(pair.Key, pair.Value);
-                }
-
-                if (objDict.ContainsKey(COMPONENT_KEY)) {
-                    objDict[COMPONENT_KEY] = componentSet;
-                }
-
-                if (objDict.ContainsKey(CHILDREN_KEY)) {
-                    objDict[CHILDREN_KEY] = childrenSet;
-                }
-
-                cacheDict.Add(key, new SceneObject(GetHash(hashString), objDict));
+                return cacheDict;
             }
-
-            return cacheDict;
         }
 
         public void Merge(string path, object result) {
             var resultDict = (Dictionary<ulong, SceneObject>) result;
-            if (path != assetPath) {
+
+            if (cache == null) {
                 assetPath = path;
                 cache = resultDict;
                 return;
             }
 
-            var updateKeys = cache.Keys.Intersect(resultDict.Keys);
-            var removeKeys = cache.Keys.Except(resultDict.Keys);
-            var addKeys = resultDict.Keys.Except(cache.Keys);
+            assetPath = path;
+
+            var updateKeys = cache.Keys.Intersect(resultDict.Keys).ToList();
+            var removeKeys = cache.Keys.Except(resultDict.Keys).ToList();
+            var addKeys = resultDict.Keys.Except(cache.Keys).ToList();
 
             foreach (var key in removeKeys) {
                 cache.Remove(key);
+                // Console.WriteLine("Removed " + key);
             }
 
             foreach (var key in addKeys) {
                 cache.Add(key, resultDict[key]);
+                // Console.WriteLine("Added " + key);
             }
 
             foreach (var key in updateKeys) {
-                if (cache[key].Hash != resultDict[key].Hash) {
-                    cache[key] = resultDict[key];
-                }
+                if (cache[key].Hash == resultDict[key].Hash) continue;
+                cache[key] = resultDict[key];
+                // Console.WriteLine("Updated " + key);
             }
         }
 

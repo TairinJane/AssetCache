@@ -15,7 +15,7 @@ namespace AssetCache {
         }
 
         public int GetLocalAnchorUsages(ulong anchor) {
-            var pattern = new Regex($@".*fileID: {anchor}\D+.*");
+            var pattern = new Regex($@".*fileID: {anchor}\b");
             var count = SearchByRegex(pattern);
             if (GetComponents().Contains(anchor)) count++;
             if (GetChildren().Contains(anchor)) count++;

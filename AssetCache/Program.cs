@@ -3,7 +3,8 @@
 namespace AssetCache {
     internal class Program {
         public static void Main(string[] args) {
-            var path = "F:\\jopa\\stuff\\SampleScene\\SampleScene.unity";
+            var path = "F:\\SampleScene\\SceneLittle.txt";
+            var path2 = "F:\\SampleScene\\SceneLittle2.txt";
 
             AssetCache assetCache = new AssetCache();
             var result = assetCache.Build(path, () => throw new OperationCanceledException());
@@ -17,6 +18,10 @@ namespace AssetCache {
             }
 
             Console.WriteLine("local anchor 241: " + assetCache.GetLocalAnchorUsages(241));
+
+            result = assetCache.Build(path2, () => throw new OperationCanceledException());
+            assetCache.Merge(path2, result);
+
             Console.WriteLine("END");
         }
     }
