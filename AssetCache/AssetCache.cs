@@ -100,13 +100,11 @@ namespace AssetCache {
         public void Merge(string path, object result) {
             var resultDict = (Dictionary<ulong, SceneObject>) result;
 
-            if (cache == null) {
+            if (path != assetPath) {
                 assetPath = path;
                 cache = resultDict;
                 return;
             }
-
-            assetPath = path;
 
             var updateKeys = cache.Keys.Intersect(resultDict.Keys).ToList();
             var removeKeys = cache.Keys.Except(resultDict.Keys).ToList();
@@ -114,18 +112,15 @@ namespace AssetCache {
 
             foreach (var key in removeKeys) {
                 cache.Remove(key);
-                // Console.WriteLine("Removed " + key);
             }
 
             foreach (var key in addKeys) {
                 cache.Add(key, resultDict[key]);
-                // Console.WriteLine("Added " + key);
             }
 
             foreach (var key in updateKeys) {
                 if (cache[key].Hash == resultDict[key].Hash) continue;
                 cache[key] = resultDict[key];
-                // Console.WriteLine("Updated " + key);
             }
         }
 
