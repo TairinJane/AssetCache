@@ -42,6 +42,7 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="ArrayMin.cs"/>
         <Compile Include="AssetCache.cs" />
         <Compile Include="Cache.cs" />
         <Compile Include="SceneObject.cs" />
